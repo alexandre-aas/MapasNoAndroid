@@ -9,10 +9,21 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.UiSettings;
+
+import android.support.v4.content.ContextCompat;
+import android.support.v4.app.ActivityCompat;
+import android.Manifest;
+import android.widget.Toast;
+import android.content.pm.PackageManager;
+import android.util.Log;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private static final int CODIGO_SOLICITACAO_LOCALIZACAO = 911;
+    private String TAG = "API Google Maps";
+    UiSettings configuracoesMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +33,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        solicitarPermissao(Manifest.permission.ACCESS_FINE_LOCATION, CODIGO_SOLICITACAO_LOCALIZACAO);
+
+
     }
 
 
@@ -37,10 +52,53 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        int permissao;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        if (mMap != null) {
+            permissao = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION);
+
+            if (permissao == PackageManager.PERMISSION_GRANTED) {
+                mMap.setMyLocationEnabled(true);
+                mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+
+                //Definir comportamentos do Mapa
+                configuracoesMap = mMap.getUiSettings();
+                configuracoesMap.setZoomControlsEnabled(true);
+                configuracoesMap.setScrollGesturesEnabled(true);
+                configuracoesMap.setTiltGesturesEnabled(true);
+                configuracoesMap.setRotateGesturesEnabled(true);
+
+            } else{
+                Log.i(TAG, "Permissão para exibir localização do usuário negada!");
+            }
+        }
     }
+
+    protected void solicitarPermissao(String tipoDePermissao, int codigoDaSolicitacao) {
+        int permission = ContextCompat.checkSelfPermission(this, tipoDePermissao);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{tipoDePermissao}, codigoDaSolicitacao
+            );
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int codigoDaSolicitacao,
+                                           String listaDePermissoes[], int[] listaDeConcessoes) {
+        switch (codigoDaSolicitacao) {
+            case CODIGO_SOLICITACAO_LOCALIZACAO: {
+
+                if (listaDeConcessoes.length == 0
+                        || listaDeConcessoes[0] != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Impossível mostrar localização - permissão requirida!", Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+        }
+    }
+
+
 }
